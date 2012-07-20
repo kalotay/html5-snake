@@ -8,6 +8,7 @@ function createArena() {
         arena.appendChild(div);
     }
     snake.paint();
+    window.setInterval(snake.moveAndRepaint.bind(snake), 100);
 }
 
 function Snake(width, height, length) {
