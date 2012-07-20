@@ -9,6 +9,7 @@ function createArena() {
     }
     paintSnake();
 }
+
 function paintSnake() {
     var tiles = document.getElementById("arena").children;
     tiles[snake.head].className = "head";
@@ -19,22 +20,20 @@ function paintSnake() {
         tile[snake.dead].className = "";
     }
 }
-function makeSnake(width, height, length) {
+
+function Snake(width, height, length) {
     var startingIndex = (height / 2) * width,
-        head = startingIndex + length,
         tail = [];
 
+    this.head = startingIndex + length;
+    this.dead = -1;
     while (--length > 0) {
         tail.push(startingIndex + length)
     }
-    return {
-        "head": head,
-        "tail": tail,
-        "dead": -1
-    };
+    this.tail = tail;
 }
 
 var WIDTH = 40,
     HEIGHT = 20,
-    snake = makeSnake(WIDTH, HEIGHT, 5);
+    snake = new Snake(WIDTH, HEIGHT, 5);
 
