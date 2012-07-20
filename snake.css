@@ -13,6 +13,10 @@ div#arena > div {
 }
 
 div#arena > div.tail {
+    background-color: gray;
+}
+
+div#arena > div.head {
     background-color: black;
 }
 
