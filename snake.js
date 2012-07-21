@@ -2,7 +2,9 @@ function Snake(width, height) {
     var arena = document.getElementById("arena"),
         elements = {},
         moves = {},
-        actions = {};
+        actions = {},
+        interval,
+        intervalId;
 
     function createArena() {
         var index = width * height,
@@ -33,12 +35,17 @@ function Snake(width, height) {
         elements.direction = "right";
         elements.targetDirection = "right";
         elements.isDead = false;
+        elements.food = midpoint;
         generateFood();
         paintAll();
+        setScore();
+        interval = 128;
+        intervalId = window.setInterval(moveAndPaintAll, interval);
     }
 
     function generateFood() {
-        elements.food = Snake.randomInt(0, width * height);
+        var size = width * height;
+        elements.food = (elements.food + Snake.randomInt(1, size)) % size;
     }
 
     function paintAll() {
@@ -52,10 +59,10 @@ function Snake(width, height) {
             paint(trail, null);
         }
         paint(elements.food, "food");
-        paint(elements.head, "head");
         elements.tail.forEach(function (tailIndex) {
             paint(tailIndex, "tail");
         });
+        paint(elements.head, "head");
     }
 
     function move() {
@@ -70,6 +77,12 @@ function Snake(width, height) {
         if (newHead === elements.food) {
             elements.length += 1;
             generateFood();
+            setScore();
+            if (((elements.length % 16) === 0) && (interval > 1)) {
+                window.clearInterval(intervalId);
+                interval = interval / 2;
+                intervalId = window.setInterval(moveAndPaintAll, interval);
+            }
         }
         elements.direction = elements.targetDirection;
         if (elements.length <= tail.length) {
@@ -120,7 +133,12 @@ function Snake(width, height) {
         return function () {
             elements.targetDirection = targetDirection;
         };
-    };
+    }
+
+    function setScore() {
+        scoreSpan = document.getElementById("score");
+        scoreSpan.textContent = "score: " + elements.length;
+    }
 
     moves.right = function moveRight(snakeHead) {
         var rowCol = indexToRowCol(snakeHead);
@@ -144,9 +162,8 @@ function Snake(width, height) {
     actions.up = makeTargetDirectionSetter("up");
     actions.down = makeTargetDirectionSetter("down");
     createArena();
-    reset();
     window.onkeydown = keyDownListener;
-    window.setInterval(moveAndPaintAll, 100);
+    reset();
 }
 
 Snake.mod = function (lhs, rhs) {
