@@ -1,104 +1,107 @@
-Snake = {};
-Snake.init = function (width, height) {
-    var moves = new Snake.Moves(width, height),
-        snake = new Snake.Snake(5, [4, 3, 2, 1], "right"),
-        arena = Snake.createArena(width, height),
-        food = new Snake.Food(width, height);
-
-    Snake.paintSnake(snake);
-    window.onkeydown = Snake.makeKeyDownListener(snake);
-    window.setInterval(Snake.moveAndRepaintSnake, 100, snake, moves, food);
-};
-
-Snake.reset = function(snake) {
-    var arena = document.getElementById("arena");
-
-    snake.trail = snake.trail.concat(snake.tail);
-    snake.trail.push(snake.head);
-    snake.direction = "right";
-    snake.targetDirection = "right";
-    snake.tail = [4, 3, 2, 1];
-    snake.head = 5;
-    snake.isAlive = true;
-    snake.length = snake.tail.length;
-    Snake.paintSnake(snake);
-};
-
-Snake.createArena = function (width, height) {
+function Snake(width, height) {
     var arena = document.getElementById("arena"),
-        index = width * height,
+        elements = {},
+        moves = {},
+        actions = {};
+
+    function createArena() {
+        var index = width * height,
         div;
 
-    while (index-- > 0) {
-        div = document.createElement("div");
-        arena.appendChild(div);
+        while (index-- > 0) {
+            div = document.createElement("div");
+            arena.appendChild(div);
+        }
     }
-    return arena;
-};
 
-Snake.Snake = function (head, tail, direction) {
-    this.head = head;
-    this.trail = [];
-    this.direction = direction;
-    this.targetDirection = direction;
-    this.tail = tail;
-    this.length = tail.length;
-    this.isAlive = true;
-};
+    function reset() {
+        var midpoint = width * height / 2,
+            length = 5,
+            tiles = arena.children,
+            index = tiles.length;
 
-Snake.paintSnake = function (snake) {
-    var tiles = document.getElementById("arena").children;
-    function changeClass(index, className) {
-        tiles[index].className = className;
+        while (--index > 0) {
+            tiles[index].className = null;
+        }
+        elements.head = midpoint;
+        elements.tail = [];
+        while (--length > 0) {
+            elements.tail.push(midpoint - length);
+        }
+        elements.trail = -1;
+        elements.length = elements.tail.length;
+        elements.direction = "right";
+        elements.targetDirection = "right";
+        elements.isDead = false;
+        generateFood();
+        paintAll();
     }
-    snake.trail.forEach(function (trailIndex) {
-        changeClass(trailIndex, "trail");
-    });
-    changeClass(snake.head, "head");
-    snake.tail.forEach(function (tailIndex) {
-        changeClass(tailIndex, "tail");
-    });
-};
 
-Snake.moveSnake = function (snake, moves, food) {
-    var move = moves[snake.targetDirection],
-        head = snake.head,
-        tail = snake.tail,
-        newHead = move(head);
-
-    if (!snake.isAlive) {
-        return;
+    function generateFood() {
+        elements.food = Snake.randomInt(0, width * height);
     }
-    if (newHead === food.location) {
-        snake.length += 1;
-        food.generate(food);
-    }
-    snake.direction = snake.targetDirection;
-    if (snake.length <= tail.length) {
-        snake.trail = [tail.pop()];
-    }
-    tail.unshift(head);
-    snake.head = newHead;
-    if (tail.indexOf(snake.head) !== -1) {
-        snake.isAlive = false;
-    }
-};
 
-Snake.moveAndRepaintSnake = function (snake, moves, food) {
-    Snake.moveSnake(snake, moves, food);
-    Snake.paintSnake(snake);
-};
+    function paintAll() {
+        var trail = elements.trail;
 
-Snake.mod = function (lhs, rhs) {
-    var result = lhs % rhs;
+        function paint(index, className) {
+            arena.children[index].className = className;
+        }
 
-    if (result < 0) {
-        result = rhs + result;
+        if (trail !== -1) {
+            paint(trail, null);
+        }
+        paint(elements.food, "food");
+        paint(elements.head, "head");
+        elements.tail.forEach(function (tailIndex) {
+            paint(tailIndex, "tail");
+        });
     }
-    return result;
-};
 
-Snake.Moves = function (width, height) {
+    function move() {
+        var move = moves[elements.targetDirection],
+            head = elements.head,
+            tail = elements.tail,
+            newHead = move(head);
+
+        if (elements.isDead) {
+            return;
+        }
+        if (newHead === elements.food) {
+            elements.length += 1;
+            generateFood();
+        }
+        elements.direction = elements.targetDirection;
+        if (elements.length <= tail.length) {
+            elements.trail = tail.shift();
+        }
+        tail.push(head);
+        elements.head = newHead;
+        if (tail.indexOf(newHead) !== -1) {
+            elements.isDead = true;
+        }
+    }
+
+    function moveAndPaintAll() {
+        move();
+        paintAll();
+    };
+
+    function keyDownListener(keyEvent) {
+        var keyCode = keyEvent.keyCode,
+            transitionTable = Snake.transitionTables[elements.direction],
+            plannedAction;
+
+        if (!(keyCode in Snake.keyTable)) {
+            return;
+        }
+        plannedAction = Snake.keyTable[keyCode];
+        if (plannedAction in transitionTable) {
+            plannedAction = transitionTable[plannedAction];
+        }
+        actions[plannedAction]();
+    }
+
     function indexToRowCol(index) {
         var column = index % width,
             row = (index - column) / width;
@@ -113,42 +116,41 @@ Snake.Moves = function (width, height) {
         return row * width + column;
     }
 
-    this.right = function moveRight(snakeHead) {
+    function makeTargetDirectionSetter(targetDirection) {
+        return function () {
+            elements.targetDirection = targetDirection;
+        };
+    };
+
+    moves.right = function moveRight(snakeHead) {
         var rowCol = indexToRowCol(snakeHead);
         return rowColToIndex(rowCol.row, Snake.mod((rowCol.column + 1), width));
     };
-
-    this.left = function moveLeft(snakeHead) {
+    moves.left = function moveLeft(snakeHead) {
         var rowCol = indexToRowCol(snakeHead);
         return rowColToIndex(rowCol.row, Snake.mod((rowCol.column - 1), width));
     };
-
-    this.up = function moveUp(snakeHead) {
+    moves.up = function moveUp(snakeHead) {
         var rowCol = indexToRowCol(snakeHead);
         return rowColToIndex(Snake.mod((rowCol.row - 1), height), rowCol.column);
     };
-
-    this.down = function moveDown(snakeHead) {
+    moves.down = function moveDown(snakeHead) {
         var rowCol = indexToRowCol(snakeHead);
         return rowColToIndex(Snake.mod((rowCol.row + 1), height), rowCol.column);
     };
-};
+    actions.reset = reset;
+    actions.right = makeTargetDirectionSetter("right");
+    actions.left = makeTargetDirectionSetter("left");
+    actions.up = makeTargetDirectionSetter("up");
+    actions.down = makeTargetDirectionSetter("down");
+    createArena();
+    reset();
+    window.onkeydown = keyDownListener;
+    window.setInterval(moveAndPaintAll, 100);
+}
 
-Snake.makeKeyDownListener = function (snake) {
-    return function onKeyDown(keyEvent) {
-        var keyCode = keyEvent.keyCode,
-            transitionTable = Snake.transitionTables[snake.direction],
-            plannedAction;
-
-        if (!(keyCode in Snake.keyTable)) {
-            return;
-        }
-        plannedAction = Snake.keyTable[keyCode];
-        if (plannedAction in transitionTable) {
-            plannedAction = transitionTable[plannedAction];
-        }
-        Snake.actions(snake, plannedAction);
-    };
+Snake.mod = function (lhs, rhs) {
+    return ((lhs % rhs) + rhs) % rhs;
 };
 
 Snake.keyTable = {
@@ -174,30 +176,7 @@ Snake.transitionTables = {
     }
 };
 
-Snake.actions = function (snake, action) {
-    if (action === "reset") {
-        Snake.reset(snake);
-    } else {
-        snake.targetDirection = action;
-    }
-};
-
 Snake.randomInt = function (min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 
-Snake.Food= function (width, height) {
-    function foodGenerator(food) {
-        food.location = Snake.randomInt(0, width * height);
-        Snake.paintFood(food);
-    }
-    this.location = null;
-    this.generate = foodGenerator;
-    foodGenerator(this);
-};
-
-Snake.paintFood = function (food) {
-    var tiles = document.getElementById("arena").children;
-
-    tiles[food.location].className = "food";
-};
