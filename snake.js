@@ -173,7 +173,15 @@ Snake.keyTable = {
     "38": "up",
     "39": "right",
     "40": "down",
-    "32": "reset"
+    "32": "reset",
+    "65": "left",
+    "87": "up",
+    "68": "right",
+    "83": "down",
+    "72": "left",
+    "75": "up",
+    "76": "right",
+    "74": "down"
 };
 
 Snake.transitionTables = {
