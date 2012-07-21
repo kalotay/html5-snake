@@ -1,15 +1,21 @@
 Snake = {};
 Snake.init = function (width, height) {
     var moves = new Snake.Moves(width, height),
-        snake = new Snake.Snake(5, [4, 3, 2, 1], "right");
+        snake = new Snake.Snake(5, [4, 3, 2, 1], "right"),
+        arena = Snake.createArena(width, height),
+        intervalId;
 
-    Snake.createArena(width, height);
     Snake.paintSnake(snake);
     window.onkeydown = Snake.makeKeyDownListener(snake);
-    window.setInterval(Snake.moveAndRepaintSnake, 200, snake, moves);
+    arena.addEventListener("died", function() {
+        window.clearInterval(intervalId);
+    });
+    intervalId = window.setInterval(Snake.moveAndRepaintSnake, 200, snake, moves);
 };
 
 Snake.reset = function(snake) {
+    var arena = document.getElementById("arena");
+
     snake.trail = snake.trail.concat(snake.tail);
     snake.trail.push(snake.head);
     snake.direction = "right";
@@ -27,6 +33,7 @@ Snake.createArena = function (width, height) {
         div = document.createElement("div");
         arena.appendChild(div);
     }
+    return arena;
 };
 
 Snake.Snake = function (head, tail, direction) {
@@ -61,6 +68,9 @@ Snake.moveSnake = function (snake, moves) {
     }
     tail.unshift(head);
     snake.head = move(head);
+    if (tail.indexOf(snake.head) !== -1) {
+        document.getElementById("arena").dispatchEvent(new CustomEvent("died"));
+    }
 };
 
 Snake.moveAndRepaintSnake = function (snake, moves) {
