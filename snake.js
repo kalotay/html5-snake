@@ -1,128 +1,134 @@
-function createArena() {
+function createArena(width, height) {
+    function Snake(head, tail, direction) {
+        this.head = head;
+        this.trail = -1;
+        this.direction = direction;
+        this.tail = tail;
+        this.length = tail.length;
+    }
+
+    function paintSnake(snake) {
+        var tiles = document.getElementById("arena").children;
+        tiles[snake.head].className = "head";
+        snake.tail.forEach(function (tailIndex) {
+            tiles[tailIndex].className = "tail";
+        });
+        if (snake.trail != -1) {
+            tiles[snake.trail].className = null;
+        }
+    }
+
+    function moveSnake(snake, movers) {
+        var mover = movers[snake.direction].mover,
+            head = snake.head,
+            tail = snake.tail;
+
+        if (snake.length <= tail.length) {
+            snake.trail = tail.pop();
+        }
+        tail.unshift(head);
+        snake.head = mover(head);
+    }
+
+    function moveAndRepaintSnake(snake, movers) {
+        moveSnake(snake, movers);
+        paintSnake(snake);
+    };
+
+    function indexToRowCol(index) {
+        var column = index % width,
+            row = (index - column) / width;
+
+        return {
+            "column": column,
+            "row": row
+        };
+    }
+
+    function mod(lhs, rhs) {
+        var result = lhs % rhs;
+        if (result < 0) {
+            result = rhs + result;
+        }
+        return result;
+    }
+
+    function rowColToIndex(row, column) {
+        return row * width + column;
+    }
+
+    function moveRight(snakeHead) {
+        var rowCol = indexToRowCol(snakeHead);
+        return rowColToIndex(rowCol.row, mod((rowCol.column + 1), width));
+    }
+
+    function moveLeft(snakeHead) {
+        var rowCol = indexToRowCol(snakeHead);
+        return rowColToIndex(rowCol.row, mod((rowCol.column - 1), width));
+    }
+
+    function moveUp(snakeHead) {
+        var rowCol = indexToRowCol(snakeHead);
+        return rowColToIndex(mod((rowCol.row - 1), height), rowCol.column);
+    }
+
+    function moveDown(snakeHead) {
+        var rowCol = indexToRowCol(snakeHead);
+        return rowColToIndex(mod((rowCol.row + 1), height), rowCol.column);
+    }
+
+
+    function KeyDownListener(snake, movers, keyTable) {
+        this.snake = snake;
+        this.movers = movers;
+        this.keyTable = keyTable;
+    }
+
+    KeyDownListener.prototype.handleEvent = function onKeyDown(keyEvent) {
+        var key = this.keyTable[keyEvent.keyCode],
+            currentDirection = this.snake.direction;
+
+        if ((typeof key === "undefined") || 
+                (key === this.movers[currentDirection].opposite)) {
+            return;
+        }
+        this.snake.direction = key;
+    }
+
     var arena = document.getElementById("arena"),
-        index = WIDTH * HEIGHT,
-        div;
+        index = width * height,
+        div,
+        movers = {
+            "up": {
+                "mover": moveUp,
+                "opposite": "down"
+            },
+            "down": {
+                "mover": moveDown,
+                "opposite": "up"
+            },
+            "left": {
+                "mover": moveLeft,
+                "opposite": "right"
+            },
+            "right": {
+                "mover": moveRight,
+                "opposite": "left"
+            }
+        },
+        keyTable = {
+            "37": "left",
+            "38": "up",
+            "39": "right",
+            "40": "down"
+        },
+        snake = new Snake(5, [4, 3, 2, 1], "right");
         
     while (index-- > 0) {
         div = document.createElement("div");
         arena.appendChild(div);
     }
-    snake.paint();
-    window.onkeydown = onKeyDown;
-    window.setInterval(snake.moveAndRepaint.bind(snake), 200);
+    paintSnake(snake);
+    window.onkeydown = new KeyDownListener(snake, movers, keyTable);
+    window.setInterval(moveAndRepaintSnake, 200, snake, movers);
 }
-
-function Snake(width, height, length, mover) {
-    var startingIndex = (height / 2) * width,
-        tail = [];
-
-    this.head = startingIndex + length;
-    this.dead = -1;
-    this.mover = mover;
-    while (--length > 0) {
-        tail.push(startingIndex + length)
-    }
-    this.tail = tail;
-}
-
-Snake.prototype.paint = function paintSnake() {
-    var tiles = document.getElementById("arena").children;
-    tiles[this.head].className = "head";
-    this.tail.forEach(function (tailIndex) {
-        tiles[tailIndex].className = "tail";
-    });
-    if (this.dead != -1) {
-        tiles[this.dead].className = "";
-    }
-};
-
-Snake.prototype.move = function moveSnake() {
-    this.dead = this.tail.pop();
-    this.tail.unshift(this.head);
-    this.head = this.mover.mover(this.head);
-};
-
-Snake.prototype.moveAndRepaint = function moveAndRepaintSnake() {
-    this.move();
-    this.paint();
-};
-
-function indexToRowCol(index) {
-    var column = index % WIDTH,
-        row = (index - column) / WIDTH;
-
-    return {
-        "column": column,
-        "row": row
-    };
-}
-
-function mod(lhs, rhs) {
-    var result = lhs % rhs;
-    if (result < 0) {
-        result = rhs + result;
-    }
-    return result;
-}
-
-function rowColToIndex(row, column) {
-    return row * WIDTH + column;
-}
-
-function moveRight(snakeHead) {
-    var rowCol = indexToRowCol(snakeHead);
-    return rowColToIndex(rowCol.row, mod((rowCol.column + 1), WIDTH));
-}
-
-function moveLeft(snakeHead) {
-    var rowCol = indexToRowCol(snakeHead);
-    return rowColToIndex(rowCol.row, mod((rowCol.column - 1), WIDTH));
-}
-
-function moveUp(snakeHead) {
-    var rowCol = indexToRowCol(snakeHead);
-    return rowColToIndex(mod((rowCol.row - 1), HEIGHT), rowCol.column);
-}
-
-function moveDown(snakeHead) {
-    var rowCol = indexToRowCol(snakeHead);
-    return rowColToIndex(mod((rowCol.row + 1), HEIGHT), rowCol.column);
-}
-
-function onKeyDown(keyEvent) {
-    var key = keyTable[keyEvent.keyCode],
-        currentMover = snake.mover;
-
-    if (key === currentMover.opposite) {
-        return;
-    }
-    snake.mover = movers[key];
-}
-
-var WIDTH = 40,
-    HEIGHT = 20,
-    movers = {
-        "up": {
-            "mover": moveUp,
-            "opposite": "down"
-        },
-        "down": {
-            "mover": moveDown,
-            "opposite": "up"
-        },
-        "left": {
-            "mover": moveLeft,
-            "opposite": "right"
-        },
-        "right": {
-            "mover": moveRight,
-            "opposite": "left"
-        }
-    },
-    snake = new Snake(WIDTH, HEIGHT, 5, movers.right),
-    keyTable = {
-        "37": "left",
-        "38": "up",
-        "39": "right",
-        "40": "down"
-    };
