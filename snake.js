@@ -1,40 +1,83 @@
-function createArena(width, height) {
-    function Snake(head, tail, direction) {
-        this.head = head;
-        this.trail = -1;
-        this.direction = direction;
-        this.tail = tail;
-        this.length = tail.length;
+Snake = {};
+Snake.init = function (width, height) {
+    var moves = new Snake.Moves(width, height),
+        snake = new Snake.Snake(5, [4, 3, 2, 1], "right");
+
+    Snake.createArena(width, height);
+    Snake.paintSnake(snake);
+    window.onkeydown = Snake.makeKeyDownListener(snake);
+    window.setInterval(Snake.moveAndRepaintSnake, 200, snake, moves);
+};
+
+Snake.reset = function(snake) {
+    snake.trail = snake.trail.concat(snake.tail);
+    snake.trail.push(snake.head);
+    snake.direction = "right";
+    snake.tail = [4, 3, 2, 1];
+    snake.head = 5;
+    Snake.paintSnake(snake);
+};
+
+Snake.createArena = function (width, height) {
+    var arena = document.getElementById("arena"),
+        index = width * height,
+        div;
+
+    while (index-- > 0) {
+        div = document.createElement("div");
+        arena.appendChild(div);
     }
+};
 
-    function paintSnake(snake) {
-        var tiles = document.getElementById("arena").children;
-        tiles[snake.head].className = "head";
-        snake.tail.forEach(function (tailIndex) {
-            tiles[tailIndex].className = "tail";
-        });
-        if (snake.trail != -1) {
-            tiles[snake.trail].className = null;
-        }
+Snake.Snake = function (head, tail, direction) {
+    this.head = head;
+    this.trail = [];
+    this.direction = direction;
+    this.tail = tail;
+    this.length = tail.length;
+};
+
+Snake.paintSnake = function (snake) {
+    var tiles = document.getElementById("arena").children;
+    function changeClass(index, className) {
+        tiles[index].className = className;
     }
+    changeClass(snake.head, "head");
+    snake.tail.forEach(function (tailIndex) {
+        changeClass(tailIndex, "tail");
+    });
+    snake.trail.forEach(function (trailIndex) {
+        changeClass(trailIndex, "trail");
+    });
+};
 
-    function moveSnake(snake, movers) {
-        var mover = movers[snake.direction].mover,
-            head = snake.head,
-            tail = snake.tail;
+Snake.moveSnake = function (snake, moves) {
+    var move = moves[snake.direction],
+        head = snake.head,
+        tail = snake.tail;
 
-        if (snake.length <= tail.length) {
-            snake.trail = tail.pop();
-        }
-        tail.unshift(head);
-        snake.head = mover(head);
+    if (snake.length <= tail.length) {
+        snake.trail = [tail.pop()];
     }
+    tail.unshift(head);
+    snake.head = move(head);
+};
 
-    function moveAndRepaintSnake(snake, movers) {
-        moveSnake(snake, movers);
-        paintSnake(snake);
-    };
+Snake.moveAndRepaintSnake = function (snake, moves) {
+    Snake.moveSnake(snake, moves);
+    Snake.paintSnake(snake);
+};
 
+Snake.mod = function (lhs, rhs) {
+    var result = lhs % rhs;
+
+    if (result < 0) {
+        result = rhs + result;
+    }
+    return result;
+};
+
+Snake.Moves = function (width, height) {
     function indexToRowCol(index) {
         var column = index % width,
             row = (index - column) / width;
@@ -45,90 +88,75 @@ function createArena(width, height) {
         };
     }
 
-    function mod(lhs, rhs) {
-        var result = lhs % rhs;
-        if (result < 0) {
-            result = rhs + result;
-        }
-        return result;
-    }
-
     function rowColToIndex(row, column) {
         return row * width + column;
     }
 
-    function moveRight(snakeHead) {
+    this.right = function moveRight(snakeHead) {
         var rowCol = indexToRowCol(snakeHead);
-        return rowColToIndex(rowCol.row, mod((rowCol.column + 1), width));
-    }
+        return rowColToIndex(rowCol.row, Snake.mod((rowCol.column + 1), width));
+    };
 
-    function moveLeft(snakeHead) {
+    this.left = function moveLeft(snakeHead) {
         var rowCol = indexToRowCol(snakeHead);
-        return rowColToIndex(rowCol.row, mod((rowCol.column - 1), width));
-    }
+        return rowColToIndex(rowCol.row, Snake.mod((rowCol.column - 1), width));
+    };
 
-    function moveUp(snakeHead) {
+    this.up = function moveUp(snakeHead) {
         var rowCol = indexToRowCol(snakeHead);
-        return rowColToIndex(mod((rowCol.row - 1), height), rowCol.column);
-    }
+        return rowColToIndex(Snake.mod((rowCol.row - 1), height), rowCol.column);
+    };
 
-    function moveDown(snakeHead) {
+    this.down = function moveDown(snakeHead) {
         var rowCol = indexToRowCol(snakeHead);
-        return rowColToIndex(mod((rowCol.row + 1), height), rowCol.column);
-    }
+        return rowColToIndex(Snake.mod((rowCol.row + 1), height), rowCol.column);
+    };
+};
 
+Snake.makeKeyDownListener = function (snake) {
+    return function onKeyDown(keyEvent) {
+        var keyCode = keyEvent.keyCode,
+            transitionTable = Snake.transitionTables[snake.direction],
+            plannedAction;
 
-    function KeyDownListener(snake, movers, keyTable) {
-        this.snake = snake;
-        this.movers = movers;
-        this.keyTable = keyTable;
-    }
-
-    KeyDownListener.prototype.handleEvent = function onKeyDown(keyEvent) {
-        var key = this.keyTable[keyEvent.keyCode],
-            currentDirection = this.snake.direction;
-
-        if ((typeof key === "undefined") || 
-                (key === this.movers[currentDirection].opposite)) {
+        if (!(keyCode in Snake.keyTable)) {
             return;
         }
-        this.snake.direction = key;
-    }
+        plannedAction = Snake.keyTable[keyCode];
+        if (plannedAction in transitionTable) {
+            plannedAction = transitionTable[plannedAction];
+        }
+        Snake.actions(snake, plannedAction);
+    };
+};
 
-    var arena = document.getElementById("arena"),
-        index = width * height,
-        div,
-        movers = {
-            "up": {
-                "mover": moveUp,
-                "opposite": "down"
-            },
-            "down": {
-                "mover": moveDown,
-                "opposite": "up"
-            },
-            "left": {
-                "mover": moveLeft,
-                "opposite": "right"
-            },
-            "right": {
-                "mover": moveRight,
-                "opposite": "left"
-            }
-        },
-        keyTable = {
-            "37": "left",
-            "38": "up",
-            "39": "right",
-            "40": "down"
-        },
-        snake = new Snake(5, [4, 3, 2, 1], "right");
-        
-    while (index-- > 0) {
-        div = document.createElement("div");
-        arena.appendChild(div);
+Snake.keyTable = {
+    "37": "left",
+    "38": "up",
+    "39": "right",
+    "40": "down",
+    "32": "reset"
+};
+
+Snake.transitionTables = {
+    "up": {
+        "down": "up"
+    },
+    "down": {
+        "up": "down"
+    },
+    "left": {
+        "right": "left"
+    },
+    "right": {
+        "left": "right"
     }
-    paintSnake(snake);
-    window.onkeydown = new KeyDownListener(snake, movers, keyTable);
-    window.setInterval(moveAndRepaintSnake, 200, snake, movers);
-}
+};
+
+Snake.actions = function (snake, action) {
+    if (action === "reset") {
+        Snake.reset(snake);
+    } else {
+        snake.direction = action;
+    }
+};
