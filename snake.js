@@ -83,10 +83,10 @@ function Snake(width, height) {
             }
         }
         elements.direction = elements.targetDirection;
-        if (elements.length <= tail.length) {
+        tail.push(head);
+        if (elements.length < tail.length) {
             elements.trail = tail.shift();
         }
-        tail.push(head);
         elements.head = newHead;
         if (tail.indexOf(newHead) !== -1) {
             elements.isDead = true;
