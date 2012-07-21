@@ -3,11 +3,11 @@ Snake.init = function (width, height) {
     var moves = new Snake.Moves(width, height),
         snake = new Snake.Snake(5, [4, 3, 2, 1], "right"),
         arena = Snake.createArena(width, height),
-        intervalId;
+        food = new Snake.Food(width, height);
 
     Snake.paintSnake(snake);
     window.onkeydown = Snake.makeKeyDownListener(snake);
-    intervalId = window.setInterval(Snake.moveAndRepaintSnake, 100, snake, moves);
+    window.setInterval(Snake.moveAndRepaintSnake, 100, snake, moves, food);
 };
 
 Snake.reset = function(snake) {
@@ -20,6 +20,7 @@ Snake.reset = function(snake) {
     snake.tail = [4, 3, 2, 1];
     snake.head = 5;
     snake.isAlive = true;
+    snake.length = snake.tail.length;
     Snake.paintSnake(snake);
 };
 
@@ -59,27 +60,32 @@ Snake.paintSnake = function (snake) {
     });
 };
 
-Snake.moveSnake = function (snake, moves) {
+Snake.moveSnake = function (snake, moves, food) {
     var move = moves[snake.targetDirection],
         head = snake.head,
-        tail = snake.tail;
+        tail = snake.tail,
+        newHead = move(head);
 
     if (!snake.isAlive) {
         return;
+    }
+    if (newHead === food.location) {
+        snake.length += 1;
+        food.generate(food);
     }
     snake.direction = snake.targetDirection;
     if (snake.length <= tail.length) {
         snake.trail = [tail.pop()];
     }
     tail.unshift(head);
-    snake.head = move(head);
+    snake.head = newHead;
     if (tail.indexOf(snake.head) !== -1) {
         snake.isAlive = false;
     }
 };
 
-Snake.moveAndRepaintSnake = function (snake, moves) {
-    Snake.moveSnake(snake, moves);
+Snake.moveAndRepaintSnake = function (snake, moves, food) {
+    Snake.moveSnake(snake, moves, food);
     Snake.paintSnake(snake);
 };
 
@@ -174,4 +180,24 @@ Snake.actions = function (snake, action) {
     } else {
         snake.targetDirection = action;
     }
+};
+
+Snake.randomInt = function (min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+};
+
+Snake.Food= function (width, height) {
+    function foodGenerator(food) {
+        food.location = Snake.randomInt(0, width * height);
+        Snake.paintFood(food);
+    }
+    this.location = null;
+    this.generate = foodGenerator;
+    foodGenerator(this);
+};
+
+Snake.paintFood = function (food) {
+    var tiles = document.getElementById("arena").children;
+
+    tiles[food.location].className = "food";
 };

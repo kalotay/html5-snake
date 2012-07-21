@@ -20,3 +20,6 @@ div#arena > div.head {
     background-color: black;
 }
 
+div#arena > div.food {
+    background-color: red;
+}
