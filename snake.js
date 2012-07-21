@@ -22,7 +22,7 @@ function Snake(width, height) {
             tiles = arena.children,
             index = tiles.length;
 
-        while (--index > 0) {
+        while (--index >= 0) {
             tiles[index].className = null;
         }
         elements.head = midpoint;
