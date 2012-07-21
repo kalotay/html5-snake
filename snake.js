@@ -10,7 +10,7 @@ Snake.init = function (width, height) {
     arena.addEventListener("died", function() {
         window.clearInterval(intervalId);
     });
-    intervalId = window.setInterval(Snake.moveAndRepaintSnake, 200, snake, moves);
+    intervalId = window.setInterval(Snake.moveAndRepaintSnake, 500, snake, moves);
 };
 
 Snake.reset = function(snake) {
@@ -40,6 +40,7 @@ Snake.Snake = function (head, tail, direction) {
     this.head = head;
     this.trail = [];
     this.direction = direction;
+    this.targetDirection = direction;
     this.tail = tail;
     this.length = tail.length;
 };
@@ -49,20 +50,21 @@ Snake.paintSnake = function (snake) {
     function changeClass(index, className) {
         tiles[index].className = className;
     }
-    changeClass(snake.head, "head");
-    snake.tail.forEach(function (tailIndex) {
-        changeClass(tailIndex, "tail");
-    });
     snake.trail.forEach(function (trailIndex) {
         changeClass(trailIndex, "trail");
     });
+    snake.tail.forEach(function (tailIndex) {
+        changeClass(tailIndex, "tail");
+    });
+    changeClass(snake.head, "head");
 };
 
 Snake.moveSnake = function (snake, moves) {
-    var move = moves[snake.direction],
+    var move = moves[snake.targetDirection],
         head = snake.head,
         tail = snake.tail;
 
+    snake.direction = snake.targetDirection;
     if (snake.length <= tail.length) {
         snake.trail = [tail.pop()];
     }
@@ -167,6 +169,6 @@ Snake.actions = function (snake, action) {
     if (action === "reset") {
         Snake.reset(snake);
     } else {
-        snake.direction = action;
+        snake.targetDirection = action;
     }
 };
