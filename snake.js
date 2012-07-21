@@ -27,9 +27,6 @@ function Snake(width, height) {
         }
         elements.head = midpoint;
         elements.tail = [];
-        while (--length > 0) {
-            elements.tail.push(midpoint - length);
-        }
         elements.trail = -1;
         elements.length = elements.tail.length;
         elements.direction = "right";
@@ -39,7 +36,8 @@ function Snake(width, height) {
         generateFood();
         paintAll();
         setScore();
-        interval = 128;
+        interval = 100;
+        window.clearInterval(intervalId);
         intervalId = window.setInterval(moveAndPaintAll, interval);
     }
 
@@ -78,9 +76,9 @@ function Snake(width, height) {
             elements.length += 1;
             generateFood();
             setScore();
-            if (((elements.length % 16) === 0) && (interval > 1)) {
+            if (((elements.length % 8) === 0) && (interval > 10)) {
                 window.clearInterval(intervalId);
-                interval = interval / 2;
+                interval -= 10;
                 intervalId = window.setInterval(moveAndPaintAll, interval);
             }
         }
