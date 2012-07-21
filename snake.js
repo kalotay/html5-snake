@@ -7,10 +7,7 @@ Snake.init = function (width, height) {
 
     Snake.paintSnake(snake);
     window.onkeydown = Snake.makeKeyDownListener(snake);
-    arena.addEventListener("died", function() {
-        window.clearInterval(intervalId);
-    });
-    intervalId = window.setInterval(Snake.moveAndRepaintSnake, 500, snake, moves);
+    intervalId = window.setInterval(Snake.moveAndRepaintSnake, 100, snake, moves);
 };
 
 Snake.reset = function(snake) {
@@ -19,8 +16,10 @@ Snake.reset = function(snake) {
     snake.trail = snake.trail.concat(snake.tail);
     snake.trail.push(snake.head);
     snake.direction = "right";
+    snake.targetDirection = "right";
     snake.tail = [4, 3, 2, 1];
     snake.head = 5;
+    snake.isAlive = true;
     Snake.paintSnake(snake);
 };
 
@@ -43,6 +42,7 @@ Snake.Snake = function (head, tail, direction) {
     this.targetDirection = direction;
     this.tail = tail;
     this.length = tail.length;
+    this.isAlive = true;
 };
 
 Snake.paintSnake = function (snake) {
@@ -53,10 +53,10 @@ Snake.paintSnake = function (snake) {
     snake.trail.forEach(function (trailIndex) {
         changeClass(trailIndex, "trail");
     });
+    changeClass(snake.head, "head");
     snake.tail.forEach(function (tailIndex) {
         changeClass(tailIndex, "tail");
     });
-    changeClass(snake.head, "head");
 };
 
 Snake.moveSnake = function (snake, moves) {
@@ -64,6 +64,9 @@ Snake.moveSnake = function (snake, moves) {
         head = snake.head,
         tail = snake.tail;
 
+    if (!snake.isAlive) {
+        return;
+    }
     snake.direction = snake.targetDirection;
     if (snake.length <= tail.length) {
         snake.trail = [tail.pop()];
@@ -71,7 +74,7 @@ Snake.moveSnake = function (snake, moves) {
     tail.unshift(head);
     snake.head = move(head);
     if (tail.indexOf(snake.head) !== -1) {
-        document.getElementById("arena").dispatchEvent(new CustomEvent("died"));
+        snake.isAlive = false;
     }
 };
 
