@@ -30,7 +30,6 @@ function Snake(width, height) {
         elements.length = elements.tail.length;
         elements.direction = "right";
         elements.targetDirection = "right";
-        elements.isDead = false;
         elements.food = midpoint; //seed value. not actual one used
         generateFood();
         paintAll();
@@ -73,9 +72,6 @@ function Snake(width, height) {
             tail = elements.tail,
             newHead = move(head);
 
-        if (elements.isDead) {
-            return;
-        }
         if (newHead === elements.food) { //food pickup
             elements.length += 1;
             generateFood();
@@ -93,7 +89,7 @@ function Snake(width, height) {
         }
         elements.head = newHead;
         if (tail.indexOf(newHead) !== -1) { //collision with tail
-            elements.isDead = true;
+            window.clearInterval(intervalId);
         }
     }
 
