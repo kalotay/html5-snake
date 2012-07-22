@@ -10,16 +10,17 @@ div#arena > div {
     margin: 0;
     padding: 0;
     float: left;
+    border-radius: 50%;
 }
 
 div#arena > div.tail {
-    background-color: gray;
+    background-color: blue;
 }
 
 div#arena > div.head {
-    background-color: black;
+    background-color: gray;
 }
 
 div#arena > div.food {
-    background-color: red;
+    background-color: orange;
 }
