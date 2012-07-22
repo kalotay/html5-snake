@@ -18,7 +18,6 @@ function Snake(width, height) {
 
     function reset() {
         var midpoint = width * height / 2,
-            length = 5,
             tiles = arena.children,
             index = tiles.length;
 
@@ -26,13 +25,13 @@ function Snake(width, height) {
             tiles[index].className = null;
         }
         elements.head = midpoint;
-        elements.tail = [];
-        elements.trail = -1;
+        elements.tail = [midpoint - 1];
+        elements.trail = -1; //-1 indicates lack of trail
         elements.length = elements.tail.length;
         elements.direction = "right";
         elements.targetDirection = "right";
         elements.isDead = false;
-        elements.food = midpoint;
+        elements.food = midpoint; //seed value. not actual one used
         generateFood();
         paintAll();
         setScore();
@@ -43,6 +42,10 @@ function Snake(width, height) {
 
     function generateFood() {
         var size = width * height;
+        //the following line makes sure the food is not generated where the
+        //previous one was
+        //However the food might be generated in the tail
+        //avoiding all parts of the snake might take some effort
         elements.food = (elements.food + Snake.randomInt(1, size)) % size;
     }
 
@@ -56,6 +59,7 @@ function Snake(width, height) {
         if (trail !== -1) {
             paint(trail, null);
         }
+        //paint order matters
         paint(elements.food, "food");
         elements.tail.forEach(function (tailIndex) {
             paint(tailIndex, "tail");
@@ -72,11 +76,11 @@ function Snake(width, height) {
         if (elements.isDead) {
             return;
         }
-        if (newHead === elements.food) {
+        if (newHead === elements.food) { //food pickup
             elements.length += 1;
             generateFood();
             setScore();
-            if (((elements.length % 8) === 0) && (interval > 10)) {
+            if (((elements.length % 8) === 0) && (interval > 10)) { //speedup
                 window.clearInterval(intervalId);
                 interval -= 10;
                 intervalId = window.setInterval(moveAndPaintAll, interval);
@@ -88,7 +92,7 @@ function Snake(width, height) {
             elements.trail = tail.shift();
         }
         elements.head = newHead;
-        if (tail.indexOf(newHead) !== -1) {
+        if (tail.indexOf(newHead) !== -1) { //collision with tail
             elements.isDead = true;
         }
     }
@@ -103,11 +107,11 @@ function Snake(width, height) {
             transitionTable = Snake.transitionTables[elements.direction],
             plannedAction;
 
-        if (!(keyCode in Snake.keyTable)) {
+        if (!(keyCode in Snake.keyTable)) { //key not used
             return;
         }
         plannedAction = Snake.keyTable[keyCode];
-        if (plannedAction in transitionTable) {
+        if (plannedAction in transitionTable) { //makes sure reversing is impossible
             plannedAction = transitionTable[plannedAction];
         }
         actions[plannedAction]();
@@ -165,23 +169,24 @@ function Snake(width, height) {
 }
 
 Snake.mod = function (lhs, rhs) {
+    //adapts modulo operator so the sign follows the divisor and not the dividend
     return ((lhs % rhs) + rhs) % rhs;
 };
 
 Snake.keyTable = {
-    "37": "left",
-    "38": "up",
-    "39": "right",
-    "40": "down",
-    "32": "reset",
-    "65": "left",
-    "87": "up",
-    "68": "right",
-    "83": "down",
-    "72": "left",
-    "75": "up",
-    "76": "right",
-    "74": "down"
+    "37": "left", //left
+    "38": "up", //up
+    "39": "right", //right
+    "40": "down", //down
+    "32": "reset", //space
+    "65": "left", //a
+    "87": "up", //w
+    "68": "right", //d
+    "83": "down", //s
+    "72": "left", //h
+    "75": "up", //k
+    "76": "right", //l
+    "74": "down" //j
 };
 
 Snake.transitionTables = {
@@ -200,6 +205,7 @@ Snake.transitionTables = {
 };
 
 Snake.randomInt = function (min, max) {
+    //see Mozilla's docs on Math.random
     return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 
