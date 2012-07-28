@@ -24,8 +24,8 @@ function Snake(width, height) {
         while (--index >= 0) {
             tiles[index].className = null;
         }
-        elements.head = midpoint;
-        elements.tail = [midpoint - 1];
+        elements.head = midpoint + 1;
+        elements.tail = [midpoint];
         elements.trail = -1; //-1 indicates lack of trail
         elements.length = elements.tail.length;
         elements.direction = "right";
